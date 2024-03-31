@@ -93,6 +93,39 @@ The constructors have been replaced by builder methods so that errors can be com
 - Deprecated `EndEffectorInteractionStyle` got removed from `RobotInteraction` (https://github.com/ros-planning/moveit/pull/1287)
   Use [the corresponding `InteractionStyle` definitions](https://github.com/ros-planning/moveit/pull/1287/files#diff-24e57a8ea7f2f2d8a63cfc31580d09ddL240) instead
 
+## ROS Humble
+- [03/2024] Modified the `moveit_cpp::PlanningSceneMonitorOptions` struct to use constant strings for topic names instead of loading them from parameters. This change simplifies the API and ensures that topic names are consistent and less prone to user error. The affected topics are:
+  - Joint state topic now uses `planning_scene_monitor::PlanningSceneMonitor::DEFAULT_JOINT_STATES_TOPIC` directly.
+  - Attached collision object topic now uses `planning_scene_monitor::PlanningSceneMonitor::DEFAULT_ATTACHED_COLLISION_OBJECT_TOPIC` directly.
+  - Monitored planning scene topic now uses `planning_scene_monitor::PlanningSceneMonitor::MONITORED_PLANNING_SCENE_TOPIC` directly.
+  - Publish planning scene topic now uses `planning_scene_monitor::PlanningSceneMonitor::DEFAULT_PLANNING_SCENE_TOPIC` directly.
+
+  Before this change, these topics could be configured via ROS parameters, allowing for a higher degree of flexibility at the cost of increased complexity and potential misconfiguration. With the new approach, these topics are set to their default values, as defined in the `PlanningSceneMonitor` class, simplifying the configuration process. Users who need to customize the topic names can do so via topic remapping in launch files or at the ROS node level.
+
+  Example of migration for a custom setup that previously relied on parameters to configure topic names:
+
+  ```xml
+  - <param name="joint_state_topic" value="custom_joint_states"/>
+  - <param name="attached_collision_object_topic" value="custom_attached_collision_object"/>
+  ```
+  This change affects users who previously relied on parameter-based topic configuration for the moveit_cpp::MoveItCpp class and associated utilities.
+
+  - [03/2024] Updated `moveit_servo::ServoParameters` to utilize hardcoded topic names for incoming commands and status updates. This modification removes the previous dynamic configuration of certain topics via parameters, standardizing the topics and streamlining the setup process.
+
+  Affected topics and changes are as follows:
+  - Status topic is now hardcoded to `"/servo_server/status"`.
+  - Cartesian command topic is now hardcoded to `"/servo_server/cartesian_commands"`.
+  - Joint command topic is now hardcoded to `"/servo_server/joint_commands"`.
+
+  Users who were utilizing custom topic names by setting ROS parameters will need to remap these topics manually in their launch files or source code. For example:
+
+  ```xml
+  <remap from="servo_server/status" to="custom_status_topic"/>
+  <remap from="servo_server/cartesian_commands" to="custom_cartesian_command_topic"/>
+  <remap from="servo_server/joint_commands" to="custom_joint_command_topic"/>
+  ```
+  These changes are made in the pursuit of a more straightforward configuration at the expense of parameter-driven flexibility. It is recommended to review your setup and adjust topic remappings as necessary to maintain compatibility with this new update.
+
 ## ROS Kinetic
 
 - In the C++ MoveGroupInterface class the ``plan()`` method returns a ``MoveItErrorCode`` object and not a boolean.
